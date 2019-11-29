@@ -1,0 +1,2 @@
+include ':app', ':scaleclicklistener'
+rootProject.name='ScaleClick'
