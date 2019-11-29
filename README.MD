@@ -15,3 +15,5 @@ private val debounceTime: Int = 1000
 
 Set by OnScaleClickListener constructor
 ```
+Preview
+![Gif](https://i.ibb.co/m98JX4d/scale-click-preview.gif)
