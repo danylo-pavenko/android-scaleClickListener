@@ -156,3 +156,11 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
         }
     }
 }
+
+fun View.setOnClickWithTouchImpact(clickAction: () -> Unit) {
+    this.setOnTouchListener(object : OnScaleClickListener(withDebounced = true) {
+        override fun onClick(view: View?) {
+            clickAction.invoke()
+        }
+    })
+}
