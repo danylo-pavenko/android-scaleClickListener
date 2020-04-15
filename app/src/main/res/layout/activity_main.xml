@@ -37,4 +37,14 @@
         android:tint="@android:color/holo_blue_dark"
         app:srcCompat="@android:drawable/ic_input_delete" />
 
+    <Button
+        android:id="@+id/btnLong"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Long Click"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnClick" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

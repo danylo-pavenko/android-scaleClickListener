@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import com.dansdev.scaleclicklistener.OnScaleClickListener
+import com.dansdev.scaleclicklistener.setOnLongClickWithTouchImpact
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -24,5 +25,10 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Are you clicked on ImageView", Toast.LENGTH_SHORT).show()
             }
         })
+        btnLong.setOnLongClickWithTouchImpact({
+            Toast.makeText(this@MainActivity, "Are you clicked Button REGULAR", Toast.LENGTH_SHORT).show()
+        }) {
+            Toast.makeText(this@MainActivity, "Are you clicked Button LONG", Toast.LENGTH_SHORT).show()
+        }
     }
 }

@@ -6,6 +6,7 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.graphics.Rect
+import android.os.Handler
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
@@ -15,10 +16,13 @@ import com.livinglifetechway.k4kotlin.orZero
 import java.lang.ref.WeakReference
 
 @SuppressLint("ClickableViewAccessibility")
-abstract class OnScaleClickListener(private val duration: Long = DURATION,
-                                    private val scale: Float = SCALE,
-                                    private val withDebounced: Boolean = true,
-                                    private val debounceTime: Int = 1000) : View.OnTouchListener, View.OnClickListener {
+abstract class OnLongScaleClickListener(
+    private val duration: Long = DURATION,
+    private val scale: Float = SCALE,
+    private val withDebounced: Boolean = true,
+    private val debounceTime: Int = 1000,
+    private val longCheckTime: Long = 1000
+) : View.OnTouchListener, View.OnClickListener, View.OnLongClickListener {
 
     companion object {
         const val DURATION = 100L
@@ -34,6 +38,7 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
     private lateinit var scaleYDownAnimator: ObjectAnimator
     private lateinit var scaleYUpAnimator: ObjectAnimator
     private lateinit var endAnimationListener: AnimatorListenerAdapter
+    private lateinit var endLongAnimationListener: AnimatorListenerAdapter
 
     private var view: WeakReference<View>? = null
     private var createdAnimators = false
@@ -43,6 +48,7 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
 
     private var downSet: AnimatorSet? = null
     private var upSet: AnimatorSet? = null
+    private val longHandler = Handler()
 
     private fun createAnimators() {
         this.view?.let { view ->
@@ -60,18 +66,32 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
                         }
                         lastTimeClicked = SystemClock.elapsedRealtime()
                     }
-                    onClick(this@OnScaleClickListener.view?.get())
+                    onClick(this@OnLongScaleClickListener.view?.get())
+                }
+            }
+
+            endLongAnimationListener = object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator?) {
+                    super.onAnimationEnd(animation)
+                    if (withDebounced) {
+                        if (SystemClock.elapsedRealtime() - lastTimeClicked < debounceTime) {
+                            return
+                        }
+                        lastTimeClicked = SystemClock.elapsedRealtime()
+                    }
+                    onLongClick(this@OnLongScaleClickListener.view?.get())
+                    longHandler.removeCallbacks(handleLongClickRunnable)
                 }
             }
 
             upSet = AnimatorSet().apply {
-                duration = this@OnScaleClickListener.duration
+                duration = this@OnLongScaleClickListener.duration
                 interpolator = FastOutSlowInInterpolator()
                 playTogether(scaleXUpAnimator, scaleYUpAnimator)
             }
 
             downSet = AnimatorSet().apply {
-                duration = this@OnScaleClickListener.duration
+                duration = this@OnLongScaleClickListener.duration
                 interpolator = AccelerateInterpolator()
                 playTogether(scaleXDownAnimator, scaleYDownAnimator)
             }
@@ -85,6 +105,7 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
             MotionEvent.ACTION_DOWN -> {
                 setVisibleRect()
                 touchTime = System.currentTimeMillis()
+                longHandler.postDelayed(handleLongClickRunnable, longCheckTime)
                 if (!pressed) {
                     setScaleEffects(true)
                     pressed = true
@@ -112,6 +133,7 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
                     setScaleEffects(false)
                     released = true
                     pressed = false
+                    longHandler.removeCallbacks(handleLongClickRunnable)
                 }
                 false
             }
@@ -123,6 +145,13 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
             }
             else -> false
         }
+    }
+
+    private val handleLongClickRunnable = Runnable {
+        upSet?.addListener(endLongAnimationListener)
+        setScaleEffects(false)
+        released = true
+        pressed = false
     }
 
     private fun focusInView(event: MotionEvent): Boolean {
@@ -157,10 +186,15 @@ abstract class OnScaleClickListener(private val duration: Long = DURATION,
     }
 }
 
-fun View.setOnClickWithTouchImpact(clickAction: () -> Unit) {
-    this.setOnTouchListener(object : OnScaleClickListener(withDebounced = true) {
+fun View.setOnLongClickWithTouchImpact(onClickAction: (() -> Unit)? = null, onLongClickAction: (() -> Unit)? = null) {
+    this.setOnTouchListener(object : OnLongScaleClickListener(withDebounced = true) {
         override fun onClick(view: View?) {
-            clickAction.invoke()
+            onClickAction?.invoke()
+        }
+
+        override fun onLongClick(v: View?): Boolean {
+            onLongClickAction?.invoke()
+            return true
         }
     })
 }
